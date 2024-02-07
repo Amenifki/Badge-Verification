@@ -1,0 +1,104 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Badge Verification</title>
+    <link rel="stylesheet" href="styles.css">
+
+</head>
+<body>
+    <h1>Badge Verification</h1>
+    <!-- File input field for selecting a PNG image -->
+    <input type="file" id="uploadInput" accept="image/png">
+    <!-- Div to display the validation result -->
+    <div id="result"></div>
+
+    <script>
+        function verifyBadge(image) {
+            // Create a canvas element
+            const canvas = document.createElement('canvas');
+            const ctx = canvas.getContext('2d');
+
+            // Set canvas size
+            canvas.width = 512;
+            canvas.height = 512;
+
+            // Draw the image onto the canvas
+            ctx.drawImage(image, 0, 0, canvas.width, canvas.height);
+
+            // Check if the image is 512x512
+            if (image.width !== 512 || image.height !== 512) {
+                return "Image dimensions are not 512x512.";
+            }
+
+            // Check if all non-transparent pixels are within a circle
+            for (let y = 0; y < canvas.height; y++) {
+                for (let x = 0; x < canvas.width; x++) {
+                    const pixelData = ctx.getImageData(x, y, 1, 1).data;
+                    const isTransparent = pixelData[3] === 0; // Alpha value
+                    const isWithinCircle = Math.sqrt(Math.pow(x - 256, 2) + Math.pow(y - 256, 2)) <= 256;
+                    if (!isTransparent && !isWithinCircle) {
+                        return "Non-transparent pixels are outside the circle.";
+                    }
+                }
+            }
+
+            // Check if the colors give a "happy" feeling (you can define your own criteria)
+            // For simplicity, let's just check if there's any yellow color (RGB: 255, 255, 0)
+            let hasHappyColors = false;
+            for (let y = 0; y < canvas.height; y++) {
+                for (let x = 0; x < canvas.width; x++) {
+                    const pixelData = ctx.getImageData(x, y, 1, 1).data;
+                    if (pixelData[0] === 255 && pixelData[1] === 255 && pixelData[2] === 0) {
+                        hasHappyColors = true;
+                        break;
+                    }
+                }
+                if (hasHappyColors) break;
+            }
+
+            if (!hasHappyColors) {
+                return "The badge does not contain happy colors.";
+            }
+
+            // If all checks pass, return true
+            return true;
+        }
+
+        // Add event listener to the file input field
+        // JavaScript code remains unchanged except for the display of validation result
+            document.getElementById('uploadInput').addEventListener('change', function(event) {
+                const file = event.target.files[0];
+                if (!file) return;
+
+                const reader = new FileReader();
+                reader.onload = function(event) {
+                    // Create an image element
+                    const image = new Image();
+                    image.onload = function() {
+                        // Verify the badge and get the validation result
+                        const validationResult = verifyBadge(this);
+                        // Get the result element to display the validation result
+                        const resultElement = document.getElementById('result');
+                        // Display the validation result
+                        if (validationResult === true) {
+                            resultElement.textContent = "Badge is valid!";
+                            resultElement.classList.remove('invalid');
+                            resultElement.classList.add('valid');
+                        } else {
+                            resultElement.textContent = "Badge is not valid: " + validationResult;
+                            resultElement.classList.remove('valid');
+                            resultElement.classList.add('invalid');
+                        }
+                    };
+                    // Set the source of the image to the data URL of the uploaded file
+                    image.src = event.target.result;
+                };
+                // Read the uploaded file as a data URL
+                reader.readAsDataURL(file);
+            });
+
+    </script>
+</body>
+</html>
